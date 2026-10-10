@@ -1,6 +1,6 @@
 {
   "name": "magpie-gaccode",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unofficial GACCode provider for magpie and OpenCode, with read-only quota and optional automatic refill requests",
   "type": "module",
   "main": "./index.mjs",

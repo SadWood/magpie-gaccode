@@ -1,7 +1,7 @@
 # GACCode for magpie and OpenCode
 
 **Unofficial plugin.** Independently maintained; not reviewed or endorsed by
-magpie, GACCode or OpenCode. Package: `magpie-gaccode`, version **0.1.1**.
+magpie, GACCode or OpenCode. Package: `magpie-gaccode`, version **0.1.2**.
 Provider ID: `gaccode`.
 
 Claude uses Anthropic Messages; Codex uses OpenAI Responses. Quota queries
@@ -207,9 +207,13 @@ The website plan heads the website credit card and its email is not repeated
 in the notes. A readable different API-key identity is listed separately.
 The card's balance is the website USD amount alone, a
 figure like other cards'. The credit line follows the count with the refill
-rate, a non-1x multiplier, booster counts, today's refill ticket and the
-website details, joined by "，" (magpie shows a display up to its second
-" · " part). Without a credit cap they all go in the balance.
+rate, a non-1x multiplier and `已重置` or `未重置`, joined by "，".
+Booster counts, today's refill ticket, automatic-application progress and
+website details follow in a third " · " part: magpie shows the first two
+parts on the card and keeps the full text in its hover title.
+`未重置` means today's reset has not been confirmed; missing credentials or
+failed reads remain explained in the title and do not prove no reset occurred.
+Without a credit cap they all go in the balance.
 When the credit query fails or its balance is unknown,
 the card shows the query error; website details never replace it as a balance.
 A missing USD
@@ -228,8 +232,9 @@ ticket's creation time and a fixed query cutoff. It confirms a reset only
 from a positive numeric `refill` record whose `details` exactly matches the
 observed `Automatic refill via support ticket #<complete ID>` format,
 with a valid `balanceAfter` and timestamp in that interval. A conflicting
-account ID is rejected. The card then shows `今日已重置（+12484 积分）`, for
-example; the current balance need not remain full after subsequent use.
+account ID is rejected. The card then shows `已重置`, with
+`今日已重置（+12484 积分）` in its title, for example; the current balance need
+not remain full after subsequent use.
 Hourly refills, other tickets, malformed or unrecognized records never
 confirm it. Lookup is limited to five validated 100-row pages with a shared
 six-second timeout. Failures or incomplete pagination keep the application
@@ -390,7 +395,7 @@ persistent cross-process deduplication and keeping quota reads read-only.
 
 - 网站 JWT 按原版方式读取网站积分、账号和套餐；API key 用于推理，无 JWT 时也可尝试基础积分查询。
 - 本仓库为非官方插件，未获 magpie / GACCode 审核或背书；从 GitHub 安装，尚未发布 npm。
-- `autoRequestRefill` 默认开启；显式设为 `false` 可关闭，未设置时仍保留旧配置的关闭状态。仅在托管推理明确积分耗尽时申请一次工单。额度刷新只读匹配对应工单的补充流水，确认后显示“今日已重置（+积分）”。
+- `autoRequestRefill` 默认开启；显式设为 `false` 可关闭，未设置时仍保留旧配置的关闭状态。仅在托管推理明确积分耗尽时申请一次工单。额度刷新只读匹配对应工单的补充流水，确认后卡片显示“已重置”，悬停显示“今日已重置（+积分）”；尚未确认时卡片显示“未重置”，申请进度和读取异常保留在悬停详情中。
 - 不保存网站密码，不购买或使用加油包。
 - 网站余额与 API key 消费额度分别看待；额度读取失败不会停用推理。
 - relay 按账号选择；已知模型沿用原版配置声明，未知模型保持未知，用户显式配置优先。

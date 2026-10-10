@@ -427,9 +427,11 @@ async function buildUsage(auth, refill) {
   ])
   const out = { plan: "GACCode", windows: [], signIn: "kept" }
   const balanceLines = []
+  const summary = []
   const notes = []
   let money = ""
   let appliedToday = false
+  let resetToday = false
   const status = settled[0]
   const keyStatus = token ? settled[6] : status
   const keyAccount = keyStatus?.status === "fulfilled" ? emailFromMe(keyStatus.value) : ""
@@ -447,9 +449,9 @@ async function buildUsage(auth, refill) {
     } else {
       const count = cap !== null && cap > 0 ? `${balance} / ${cap}` : `${balance} 积分`
       const refillRate = finiteNumber(status.value?.refillRate ?? status.value?.creditsPerHour)
-      if (refillRate !== null) notes.push(`${refillRate}/时`)
+      if (refillRate !== null) summary.push(`${refillRate}/时`)
       // 1x is the normal rate; a missing multiplier is left out, never guessed.
-      if (mult !== null && mult > 0 && mult !== 1) notes.push(`时段 ${mult}x`)
+      if (mult !== null && mult > 0 && mult !== 1) summary.push(`时段 ${mult}x`)
       if (cap !== null && cap > 0) {
         out.windows.push({
           name: "积分", used: Math.max(0, 100 * (cap - balance) / cap),
@@ -494,6 +496,7 @@ async function buildUsage(auth, refill) {
     if (refill.error) notes.push(`工单读取失败（${refill.error}）`)
     else if (refill.already) {
       appliedToday = true
+      resetToday = !!refill.receipt
       notes.push(refill.receipt ? `今日已重置（+${refill.receipt.amount} 积分）`
         : `今日已申请（工单${TICKET_STATES.get(refill.ticket?.status) ?? "状态未知"}）`)
       if (refill.receiptError) notes.push(refill.receiptError)
@@ -508,16 +511,20 @@ async function buildUsage(auth, refill) {
     if (autoNote && !["自动申请：选项关闭", "自动申请：待触发"].includes(autoNote)) out.error += `；${autoNote}`
     return out
   }
-  // magpie shows balance as one large figure, and a window's display only up
-  // to its second " · " part: with a credit cap, notes belong in that part.
+  // magpie shows only the first two " · " parts of a window's display;
+  // its title retains the whole string, so details follow the short summary.
   if (autoNote && autoNote !== "自动申请：选项关闭" &&
       !(appliedToday && ["自动申请：待触发", "自动申请：已申请", "自动申请：已有同日申请或待处理工单"].includes(autoNote))) notes.push(autoNote)
+  summary.push(resetToday ? "已重置" : "未重置")
+  // "未重置" means no confirmed receipt today, including unreadable evidence.
+  if (!resetToday && !appliedToday) notes.unshift(token ? "今日尚未确认重置" : "今日重置未核验（需网站 JWT）")
   const credit = out.windows[0]
   if (credit) {
+    credit.display += " · " + summary.join("，")
     if (notes.length) credit.display += " · " + notes.join("，")
     if (money) out.balance = money
   } else {
-    const lines = [...balanceLines, money, ...notes].filter(Boolean)
+    const lines = [...balanceLines, money, ...summary, ...notes].filter(Boolean)
     if (lines.length) out.balance = lines.join(" · ")
   }
   return out
